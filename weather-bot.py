@@ -12,19 +12,22 @@ if 'users' not in os.listdir():
 
 print('Bot started')
 
+global headers
+global url_5d
+global url_today
+headers = {
+    'x-rapidapi-host': "community-open-weather-map.p.rapidapi.com",
+    'x-rapidapi-key': config.OWM_key
+    }
+url_5d = "https://community-open-weather-map.p.rapidapi.com/forecast"
+url_today = "https://community-open-weather-map.p.rapidapi.com/weather"
 
-def get_weather_5d_ru(city, usr_id):
-    url = "https://community-open-weather-map.p.rapidapi.com/forecast"
 
+def get_weather_5d_ru(city, headers, url):
     querystring = {"lang": "ru", "q": f"{city}"}
 
-    headers = {
-        'x-rapidapi-host': "community-open-weather-map.p.rapidapi.com",
-        'x-rapidapi-key': "type here your api key"
-        }
-
     response = requests.request("GET", url, headers=headers, params=querystring)
-    if str(response) == '<Response [404]>':
+    if response.status_code == 404:
         return 'Заданный город не существует'
     data = json.loads(response.text)
     s = ''
@@ -45,18 +48,11 @@ def get_weather_5d_ru(city, usr_id):
     return result
 
 
-def get_weather_5d_ua(city, usr_id):
-    url = "https://community-open-weather-map.p.rapidapi.com/forecast"
-
+def get_weather_5d_ua(city, headers, url):
     querystring = {"lang": "ua", "q": f"{city}"}
 
-    headers = {
-        'x-rapidapi-host': "community-open-weather-map.p.rapidapi.com",
-        'x-rapidapi-key': "type here your api key"
-        }
-
     response = requests.request("GET", url, headers=headers, params=querystring)
-    if str(response) == '<Response [404]>':
+    if response.status_code == 404:
         return 'Задане місто не існує'
     data = json.loads(response.text)
     s = ''
@@ -77,18 +73,11 @@ def get_weather_5d_ua(city, usr_id):
     return result
 
 
-def get_weather_5d_eng(city, usr_id):
-    url = "https://community-open-weather-map.p.rapidapi.com/forecast"
-
+def get_weather_5d_eng(city, headers, url):
     querystring = {"lang": "eng", "q": f"{city}"}
 
-    headers = {
-        'x-rapidapi-host': "community-open-weather-map.p.rapidapi.com",
-        'x-rapidapi-key': "type here your api key"
-        }
-
     response = requests.request("GET", url, headers=headers, params=querystring)
-    if str(response) == '<Response [404]>':
+    if response.status_code == 404:
         return 'The specified city does not exist'
     data = json.loads(response.text)
     s = ''
@@ -109,15 +98,10 @@ Weather: {weath}\n\n'''
     return result
 
 
-def get_weather_today_rus(city):
-    url = "https://community-open-weather-map.p.rapidapi.com/weather"
+def get_weather_today_rus(city, headers, url):
     querystring = {"lang": "ru", "q": f"{city}"}
-    headers = {
-        'x-rapidapi-host': "community-open-weather-map.p.rapidapi.com",
-        'x-rapidapi-key': "type here your api key"
-        }
     response = requests.request("GET", url, headers=headers, params=querystring)
-    if str(response) == '<Response [404]>':
+    if response.status_code == 404:
         return 'Заданный город не существует'
     weather = json.loads(response.text)
     weather_now = weather['weather'][0]['description']
@@ -144,15 +128,10 @@ def get_weather_today_rus(city):
     return weather_info
 
 
-def get_weather_today_ua(city):
-    url = "https://community-open-weather-map.p.rapidapi.com/weather"
+def get_weather_today_ua(city, headers, url):
     querystring = {"lang": "ua", "q": f"{city}"}
-    headers = {
-        'x-rapidapi-host': "community-open-weather-map.p.rapidapi.com",
-        'x-rapidapi-key': "type here your api key"
-        }
     response = requests.request("GET", url, headers=headers, params=querystring)
-    if str(response) == '<Response [404]>':
+    if response.status_code == 404:
         return 'Задане місто не існує'
     weather = json.loads(response.text)
     weather_now = weather['weather'][0]['description']
@@ -179,15 +158,10 @@ def get_weather_today_ua(city):
     return weather_info
 
 
-def get_weather_today_eng(city):
-    url = "https://community-open-weather-map.p.rapidapi.com/weather"
+def get_weather_today_eng(city, headers, url):
     querystring = {"lang": "eng", "q": f"{city}"}
-    headers = {
-        'x-rapidapi-host': "community-open-weather-map.p.rapidapi.com",
-        'x-rapidapi-key': "type here your api key"
-        }
     response = requests.request("GET", url, headers=headers, params=querystring)
-    if str(response) == '<Response [404]>':
+    if response.status_code == 404:
         return 'The specified city does not exist'
     weather = json.loads(response.text)
     weather_now = weather['weather'][0]['description']
@@ -238,6 +212,7 @@ def reg(user_id):
 def hello_message(user_id):
     f = open(f'users/{user_id}/lang', 'r')
     lng = f.read()
+    f.close()
     if lng == 'rus':
         bot.send_message(user_id, 'Привет!\nНапиши мне название твоего города, и я отправлю информацию о погоде в твоём городе!\n(Ты можешь снова вызвать это сообщение командой /start или /help)\n(Также ты можешь поменять язык командой /lang)', reply_markup=config.get_keyboard_rus())
     elif lng == 'ua':
@@ -266,40 +241,47 @@ def start_message(message):
 def weather_message(message):
     user_id = message.chat.id
     text = message.text
+    global headers
+    global url_today
+    global url_5d
     if text == 'Погода: сейчас':
         f = open(f'users/{user_id}/last_request', 'r')
         req = f.read()
+        f.close()
         if req == '':
             bot.send_message(user_id, 'Сделайте хотя бы один запрос для использования данной функции', reply_markup=config.get_keyboard_rus)
         else:
-            s = get_weather_today_rus(req)
+            s = get_weather_today_rus(req, headers, url_today)
             bot.send_message(user_id, s, reply_markup=config.get_keyboard_rus())
 
     elif text == 'Погода: зараз':
         f = open(f'users/{user_id}/last_request', 'r')
         req = f.read()
+        f.close()
         if req == '':
             bot.send_message(user_id, 'Зробіть хоча б один запит для використання даної функції', reply_markup=config.get_keyboard_ua())
         else:
-            s = get_weather_today_ua(req)
+            s = get_weather_today_ua(req, headers, url_today)
             bot.send_message(user_id, s, reply_markup=config.get_keyboard_ua())
 
     elif text == 'Weather: now':
         f = open(f'users/{user_id}/last_request', 'r')
         req = f.read()
+        f.close()
         if req == '':
             bot.send_message(user_id, 'Make at least one request to use this feature', reply_markup=config.get_keyboard_en())
         else:
-            s = get_weather_today_eng(req)
+            s = get_weather_today_eng(req, headers, url_today)
             bot.send_message(user_id, s, reply_markup=config.get_keyboard_en())
 
     elif text == 'Погода: 5 дней':
         f = open(f'users/{user_id}/last_request', 'r')
         req = f.read()
+        f.close()
         if req == '':
             bot.send_message(user_id, 'Сделайте хотя бы один запрос для использования данной функции', reply_markup=config.get_keyboard_rus())
             return
-        answ = get_weather_5d_ru(req, user_id)
+        answ = get_weather_5d_ru(req, headers, url_5d)
         if 'str' in str(type(answ)):
             bot.send_message(user_id, answ, reply_markup=config.get_keyboard_rus())
         else:
@@ -310,10 +292,11 @@ def weather_message(message):
     elif text == 'Погода: 5 днiв':
         f = open(f'users/{user_id}/last_request', 'r')
         req = f.read()
+        f.close()
         if req == '':
             bot.send_message(user_id, 'Зробіть хоча б один запит для використання даної функції', reply_markup=config.get_keyboard_ua())
             return
-        answ = get_weather_5d_ua(req, user_id)
+        answ = get_weather_5d_ua(req, headers, url_5d)
         if 'str' in str(type(answ)):
             bot.send_message(user_id, answ, reply_markup=config.get_keyboard_ua())
         else:
@@ -324,10 +307,11 @@ def weather_message(message):
     elif text == 'Weather: 5 days':
         f = open(f'users/{user_id}/last_request', 'r')
         req = f.read()
+        f.close()
         if req == '':
             bot.send_message(user_id, 'Make at least one request to use this feature', reply_markup=config.get_keyboard_en())
             return
-        answ = get_weather_5d_eng(req, user_id)
+        answ = get_weather_5d_eng(req, headers, url_5d)
         if 'str' in str(type(answ)):
             bot.send_message(user_id, answ, reply_markup=config.get_keyboard_en())
         else:
@@ -346,13 +330,13 @@ def weather_message(message):
         lng = f.read()
         f.close()
         if lng == 'rus':
-            s = get_weather_today_rus(text)
+            s = get_weather_today_rus(text, headers, url_today)
             bot.send_message(user_id, s, reply_markup=config.get_keyboard_rus())
         elif lng == 'ua':
-            s = get_weather_today_ua(text)
+            s = get_weather_today_ua(text, headers, url_today)
             bot.send_message(user_id, s, reply_markup=config.get_keyboard_ua())
         else:
-            s = get_weather_today_eng(text)
+            s = get_weather_today_eng(text, headers, url_today)
             bot.send_message(user_id, s, reply_markup=config.get_keyboard_en())
 
 

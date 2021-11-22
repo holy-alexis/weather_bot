@@ -1,5 +1,6 @@
 from telebot import types
 api_key = 'type here your token'
+OWM_key = 'type here your token'
 
 
 def get_keyboard_rus():
