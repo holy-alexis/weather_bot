@@ -30,7 +30,6 @@ def get_weather_5d_ru(city, headers, url):
     if response.status_code == 404:
         return 'Заданный город не существует'
     data = json.loads(response.text)
-    s = ''
     result = []
     for i in data['list']:
         date = str(i['dt_txt']).split(' ')
@@ -55,7 +54,6 @@ def get_weather_5d_ua(city, headers, url):
     if response.status_code == 404:
         return 'Задане місто не існує'
     data = json.loads(response.text)
-    s = ''
     result = []
     for i in data['list']:
         date = str(i['dt_txt']).split(' ')
@@ -80,7 +78,6 @@ def get_weather_5d_eng(city, headers, url):
     if response.status_code == 404:
         return 'The specified city does not exist'
     data = json.loads(response.text)
-    s = ''
     result = []
     for i in data['list']:
         date = str(i['dt_txt']).split(' ')
