@@ -5,7 +5,7 @@ Bot uses Telegram API and OpenWeatherMap API
 
 To use the bot follow the steps below:
 
-Download Python3 and Git CLI
+Download Python3 and Git CLI<br>
 Open console and input next lines:
 
 >git clone https://github.com/holy-alexis/weather_bot<br>
