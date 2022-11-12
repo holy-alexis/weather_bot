@@ -13,50 +13,20 @@ if 'users' not in os.listdir():
 print('Bot started')
 
 
-def get_query_info(req):
-    headers = {
-        'x-rapidapi-host': "community-open-weather-map.p.rapidapi.com",
-        'x-rapidapi-key': config.OWM_key
-    }
-    url_5d = "https://community-open-weather-map.p.rapidapi.com/forecast"
-    url_today = "https://community-open-weather-map.p.rapidapi.com/weather"
-    answ = {"5d": (url_5d, headers), "td": (url_today, headers)}
-    return answ[req]
-
-
-def get_weather_5d_ru(city):
-    querystring = {"lang": "ru", "q": f"{city}"}
-    url, headers = get_query_info("5d")
-
-    response = requests.request("GET", url, headers=headers, params=querystring)
-    if response.status_code == 404:
-        return 'Заданный город не существует'
-    data = json.loads(response.text)
-    s = ''
-    result = []
-    for i in data['list']:
-        date = str(i['dt_txt']).split(' ')
-        day = date[0].split('-')
-        day = f'{day[2]}/{day[1]}/{day[0]}'
-        time_ = date[1].split(':')
-        time_ = f'{time_[0]}:00'
-        tempa = '{0:+3.0f}'.format(int(i['main']['temp'])-273.15)
-        weath = i['weather'][0]['description']
-        if time_ == '12:00':
-            s = f'''{day} {time_} :
-Температура:{tempa}°C
-Погодные условия: {weath}\n\n'''
-            result.append(s)
-    return result
+def get_link(city, today=True):
+    if today:
+        return f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={config.OWM_key}'
+    else:
+        return f'https://api.openweathermap.org/data/2.5/forecast?q={city}&appid={config.OWM_key}'
 
 
 def get_weather_5d_ua(city):
-    querystring = {"lang": "ua", "q": f"{city}"}
-    url, headers = get_query_info("5d")
-
-    response = requests.request("GET", url, headers=headers, params=querystring)
+    url = get_link(city, False)
+    response = requests.get(url+'&lang=ua')
     if response.status_code == 404:
         return 'Задане місто не існує'
+    if response.status_code != 200:
+        return 'Помилка, зверніться до розробника'
     data = json.loads(response.text)
     s = ''
     result = []
@@ -77,12 +47,12 @@ def get_weather_5d_ua(city):
 
 
 def get_weather_5d_eng(city):
-    querystring = {"lang": "eng", "q": f"{city}"}
-    url, headers = get_query_info("5d")
-
-    response = requests.request("GET", url, headers=headers, params=querystring)
+    url = get_link(city, False)
+    response = requests.get(url)
     if response.status_code == 404:
         return 'The specified city does not exist'
+    if response.status_code != 200:
+        return 'Error, contact the developer'
     data = json.loads(response.text)
     s = ''
     result = []
@@ -102,45 +72,13 @@ Weather: {weath}\n\n'''
     return result
 
 
-def get_weather_today_rus(city):
-    querystring = {"lang": "ru", "q": f"{city}"}
-    url, headers = get_query_info("td")
-    
-    response = requests.request("GET", url, headers=headers, params=querystring)
-    if response.status_code == 404:
-        return 'Заданный город не существует'
-    weather = json.loads(response.text)
-    weather_now = weather['weather'][0]['description']
-    weather_temp_now = weather['main']['temp'] - 273.15
-    weather_temp_feels_like = weather['main']['feels_like'] - 273.15
-    weather_temp_min = weather['main']['temp_min'] - 273.15
-    weather_temp_max = weather['main']['temp_max'] - 273.15
-    weather_pressure = round((int(weather['main']['pressure'])/1.333), 2)
-    weather_humidity = weather['main']['humidity']
-    weather_wind_speed = weather['wind']['speed']
-    weather_info = f'''Погодные условия: {weather_now}
-
-Температура:
-    Сейчас: {int(weather_temp_now)}°C, ощущается как {int(weather_temp_feels_like)}°C
-    Минимальная температура за сегодня: {int(weather_temp_min)}°C
-    Максимальная температура за сегодня: {int(weather_temp_max)}°C
-
-Давление: {weather_pressure} мм рт.ст.
-
-Влажность: {weather_humidity}%
-
-Скорость ветра: {weather_wind_speed} м/с'''
-
-    return weather_info
-
-
 def get_weather_today_ua(city):
-    querystring = {"lang": "ua", "q": f"{city}"}
-    url, headers = get_query_info("td")
-    
-    response = requests.request("GET", url, headers=headers, params=querystring)
+    url = get_link(city)
+    response = requests.get(url+'&lang=ua')
     if response.status_code == 404:
         return 'Задане місто не існує'
+    if response.status_code != 200:
+        return 'Помилка, зверніться до розробника'
     weather = json.loads(response.text)
     weather_now = weather['weather'][0]['description']
     weather_temp_now = weather['main']['temp'] - 273.15
@@ -167,12 +105,14 @@ def get_weather_today_ua(city):
 
 
 def get_weather_today_eng(city):
-    querystring = {"lang": "eng", "q": f"{city}"}
-    url, headers = get_query_info("td")
-    
-    response = requests.request("GET", url, headers=headers, params=querystring)
+    url = get_link(city)
+    response = requests.get(url)
     if response.status_code == 404:
         return 'The specified city does not exist'
+    if response.status_code != 200:
+        print(response.text)
+        print(url)
+        return 'Error, contact the developer'
     weather = json.loads(response.text)
     weather_now = weather['weather'][0]['description']
     weather_temp_now = weather['main']['temp'] - 273.15
@@ -201,12 +141,10 @@ Wind speed: {weather_wind_speed} m/s'''
 def cng_lng(user_id):
     markup = telebot.types.InlineKeyboardMarkup()
     markup.add(telebot.types.InlineKeyboardButton(
-        text='Русский 🇷🇺', callback_data='rus'))
-    markup.add(telebot.types.InlineKeyboardButton(
         text='Українська 🇺🇦', callback_data='ua'))
     markup.add(telebot.types.InlineKeyboardButton(
         text='English 🇺🇸', callback_data='eng'))
-    bot.send_message(user_id, 'Привет! Выбери свой язык ниже!\n\nВітання! Обери свою мову нижче!\n\nHello! Choose your language below!', reply_markup=markup)
+    bot.send_message(user_id, 'Вітання! Обери свою мову нижче!\n\nHello! Choose your language below!', reply_markup=markup)
 
 
 def reg(user_id):
@@ -221,9 +159,7 @@ def reg(user_id):
 def hello_message(user_id):
     with open(f'users/{user_id}/lang', 'r') as f:
         lng = f.read()
-    if lng == 'rus':
-        bot.send_message(user_id, 'Привет!\nНапиши мне название твоего города, и я отправлю информацию о погоде в твоём городе!\n(Ты можешь снова вызвать это сообщение командой /start или /help)\n(Также ты можешь поменять язык командой /lang)', reply_markup=config.get_keyboard_rus())
-    elif lng == 'ua':
+    if lng == 'ua':
         bot.send_message(user_id, 'Вітання!\nНапиши мені назву твого міста, і я відправлю інформацію про погоду в твоєму місті!\n(Ти можеш знову викликати це повідомлення командою /start або /help)\n(Також ти можеш поміняти мову командою /lang)', reply_markup=config.get_keyboard_ua())
     else:
         bot.send_message(user_id, 'Hello!\nWrite me the name of your city and I will send information about the weather in your city!\n(You can call this message again with the command /start or /help)\n(You can also change the language with the /lang command)', reply_markup=config.get_keyboard_en())
@@ -249,16 +185,7 @@ def start_message(message):
 def weather_message(message):
     user_id = message.chat.id
     text = message.text
-    if text == 'Погода: сейчас':
-        with open(f'users/{user_id}/last_request', 'r') as f:
-            req = f.read()
-        if req == '':
-            bot.send_message(user_id, 'Сделайте хотя бы один запрос для использования данной функции', reply_markup=config.get_keyboard_rus)
-        else:
-            s = get_weather_today_rus(req)
-            bot.send_message(user_id, s, reply_markup=config.get_keyboard_rus())
-
-    elif text == 'Погода: зараз':
+    if text == 'Погода: зараз':
         with open(f'users/{user_id}/last_request', 'r') as f:
             req = f.read()
         if req == '':
@@ -275,20 +202,6 @@ def weather_message(message):
         else:
             s = get_weather_today_eng(req)
             bot.send_message(user_id, s, reply_markup=config.get_keyboard_en())
-
-    elif text == 'Погода: 5 дней':
-        with open(f'users/{user_id}/last_request', 'r') as f:
-            req = f.read()
-        if req == '':
-            bot.send_message(user_id, 'Сделайте хотя бы один запрос для использования данной функции', reply_markup=config.get_keyboard_rus())
-            return
-        answ = get_weather_5d_ru(req)
-        if isinstance(answ, str):
-            bot.send_message(user_id, answ, reply_markup=config.get_keyboard_rus())
-        else:
-            bot.send_message(user_id, f'Погода на 5 дней вперёд по городу "{req}"', reply_markup=config.get_keyboard_rus())
-            for i in answ:
-                bot.send_message(user_id, i, reply_markup=config.get_keyboard_rus())
 
     elif text == 'Погода: 5 днiв':
         with open(f'users/{user_id}/last_request', 'r') as f:
@@ -318,7 +231,7 @@ def weather_message(message):
             for i in answ:
                 bot.send_message(user_id, i, reply_markup=config.get_keyboard_en())
 
-    elif text == 'Смена языка' or text == 'Зміна мови' or text == 'Switch language':
+    elif text == 'Зміна мови' or text == 'Switch language':
         cng_lng(user_id)
 
     else:
@@ -326,10 +239,7 @@ def weather_message(message):
             f.write(text)
         with open(f'users/{user_id}/lang', 'r') as f:
             lng = f.read()
-        if lng == 'rus':
-            s = get_weather_today_rus(text)
-            bot.send_message(user_id, s, reply_markup=config.get_keyboard_rus())
-        elif lng == 'ua':
+        if lng == 'ua':
             s = get_weather_today_ua(text)
             bot.send_message(user_id, s, reply_markup=config.get_keyboard_ua())
         else:
@@ -341,11 +251,7 @@ def weather_message(message):
 def query_handler(call):
     bot.answer_callback_query(callback_query_id=call.id)
     user_id = call.from_user.id
-    if call.data == 'rus':
-        with open(f'users/{user_id}/lang', 'w') as f:
-            f.write('rus')
-        reg(user_id)
-    elif call.data == 'ua':
+    if call.data == 'ua':
         with open(f'users/{user_id}/lang', 'w') as f:
             f.write('ua')
         reg(user_id)
