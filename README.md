@@ -19,4 +19,4 @@ In variable "OWN_key" insert token from OpenWeatherMap API (see https://openweat
 Back to console and input next lines:<br>
 
 >[WINDOWS] python weather_bot.py<br>
->[LINux] python3 weather_bot.py<br>
+>[LINUX] python3 weather_bot.py<br>
