@@ -3,12 +3,13 @@ import config
 import requests
 import json
 import os
+import sqlite
 
 bot = telebot.TeleBot(config.api_key)
 
-# check for folder users existence
-if 'users' not in os.listdir():
-    os.mkdir("users")
+# check for users database existence
+if 'users.db' not in os.listdir():
+    sqlite.main()
 
 print('Bot started')
 
@@ -145,118 +146,101 @@ def cng_lng(user_id):
     bot.send_message(user_id, 'Вітання! Обери свою мову нижче!\n\nHello! Choose your language below!', reply_markup=markup)
 
 
-def reg(user_id):
-    if 'last_request' not in os.listdir(f'users/{user_id}'):
-        with open(f'users/{user_id}/last_request', 'w') as f:
-            f.write('')
-        hello_message(user_id)
-    else:
-        hello_message(user_id)
-
-
 def hello_message(user_id):
-    with open(f'users/{user_id}/lang', 'r') as f:
-        lng = f.read()
+    lng = sqlite.get_language(user_id)
     if lng == 'ua':
-        bot.send_message(user_id, 'Вітання!\nНапиши мені назву твого міста, і я відправлю інформацію про погоду в твоєму місті!\n(Ти можеш знову викликати це повідомлення командою /start або /help)\n(Також ти можеш поміняти мову командою /lang)', reply_markup=config.get_keyboard_ua())
+        bot.send_message(user_id, 'Вітання!\nНапиши мені назву твого міста, і я відправлю інформацію про погоду в твоєму місті!\n(Ти можеш знову викликати це повідомлення командою /start або /help)\n(Також ти можеш поміняти мову командою /lang)', reply_markup=config.get_keyboard(lng))
     else:
-        bot.send_message(user_id, 'Hello!\nWrite me the name of your city and I will send information about the weather in your city!\n(You can call this message again with the command /start or /help)\n(You can also change the language with the /lang command)', reply_markup=config.get_keyboard_en())
+        bot.send_message(user_id, 'Hello!\nWrite me the name of your city and I will send information about the weather in your city!\n(You can call this message again with the command /start or /help)\n(You can also change the language with the /lang command)', reply_markup=config.get_keyboard(lng))
 
 
 @bot.message_handler(commands=['lang'])
 def lang_message(message):
-    user_id = message.chat.id
+    user_id = str(message.chat.id)
     cng_lng(user_id)
 
 
 @bot.message_handler(commands=['start', 'help'])
 def start_message(message):
-    user_id = message.chat.id
-    if f"{user_id}" in os.listdir('users'):
+    user_id = str(message.chat.id)
+    users = sqlite.get_users()
+    if user_id in users:
         hello_message(user_id)
     else:
-        os.system(f'mkdir users/{user_id}')
+        sqlite.add_user(user_id)
         cng_lng(user_id)
 
 
 @bot.message_handler(content_types=["text"])
 def weather_message(message):
-    user_id = message.chat.id
+    user_id = str(message.chat.id)
+    if user_id not in sqlite.get_users():
+        sqlite.add_user(user_id)
+        cng_lng(user_id)
+        return
     text = message.text
-    if text == 'Погода: зараз':
-        with open(f'users/{user_id}/last_request', 'r') as f:
-            req = f.read()
-        if req == '':
-            bot.send_message(user_id, 'Зробіть хоча б один запит для використання даної функції', reply_markup=config.get_keyboard_ua())
+    req = sqlite.get_last_request(user_id)
+    lng = sqlite.get_language(user_id)
+
+    if text in ['Зміна мови', 'Switch language']:
+        cng_lng(user_id)
+        return
+    
+    if not req and text in ['Погода: зараз', 'Weather: now', 'Погода: 5 днiв', 'Weather: 5 days']:
+        if lng == 'ua':
+            respond = 'Зробіть хоча б один запит для використання даної функції'
         else:
-            s = get_weather_today_ua(req)
-            bot.send_message(user_id, s, reply_markup=config.get_keyboard_ua())
+            respond = 'Make at least one request to use this feature'
+        bot.send_message(user_id, respond, reply_markup=config.get_keyboard(lng))
+        return
+
+    
+    if text == 'Погода: зараз':
+        respond = get_weather_today_ua(req)
 
     elif text == 'Weather: now':
-        with open(f'users/{user_id}/last_request', 'r') as f:
-            req = f.read()
-        if req == '':
-            bot.send_message(user_id, 'Make at least one request to use this feature', reply_markup=config.get_keyboard_en())
-        else:
-            s = get_weather_today_eng(req)
-            bot.send_message(user_id, s, reply_markup=config.get_keyboard_en())
+        respond = get_weather_today_eng(req)
 
     elif text == 'Погода: 5 днiв':
-        with open(f'users/{user_id}/last_request', 'r') as f:
-            req = f.read()
-        if req == '':
-            bot.send_message(user_id, 'Зробіть хоча б один запит для використання даної функції', reply_markup=config.get_keyboard_ua())
-            return
         answ = get_weather_5d_ua(req)
         if isinstance(answ, str):
-            bot.send_message(user_id, answ, reply_markup=config.get_keyboard_ua())
+            respond = answ
         else:
-            bot.send_message(user_id, f'Погода на наступні 5 днів по місту "{req}"', reply_markup=config.get_keyboard_ua())
+            bot.send_message(user_id, f'Погода на наступні 5 днів по місту "{req}"', reply_markup=config.get_keyboard(lng))
             for i in answ:
-                bot.send_message(user_id, i, reply_markup=config.get_keyboard_ua())
+                bot.send_message(user_id, i, reply_markup=config.get_keyboard(lng))
+            return
 
     elif text == 'Weather: 5 days':
-        with open(f'users/{user_id}/last_request', 'r') as f:
-            req = f.read()
-        if req == '':
-            bot.send_message(user_id, 'Make at least one request to use this feature', reply_markup=config.get_keyboard_en())
-            return
         answ = get_weather_5d_eng(req)
         if isinstance(answ, str):
-            bot.send_message(user_id, answ, reply_markup=config.get_keyboard_en())
+            respond = answ
         else:
-            bot.send_message(user_id, f'Weather for 5 days ahead in the city "{req}"', reply_markup=config.get_keyboard_en())
+            bot.send_message(user_id, f'Weather for 5 days ahead in the city "{req}"', reply_markup=config.get_keyboard(lng))
             for i in answ:
-                bot.send_message(user_id, i, reply_markup=config.get_keyboard_en())
-
-    elif text == 'Зміна мови' or text == 'Switch language':
-        cng_lng(user_id)
+                bot.send_message(user_id, i, reply_markup=config.get_keyboard(lng))
+            return
 
     else:
-        with open(f'users/{user_id}/last_request', 'w') as f:
-            f.write(text)
-        with open(f'users/{user_id}/lang', 'r') as f:
-            lng = f.read()
+        sqlite.change_last_request(user_id, text)
         if lng == 'ua':
-            s = get_weather_today_ua(text)
-            bot.send_message(user_id, s, reply_markup=config.get_keyboard_ua())
+            respond = get_weather_today_ua(text)
         else:
-            s = get_weather_today_eng(text)
-            bot.send_message(user_id, s, reply_markup=config.get_keyboard_en())
+            respond = get_weather_today_eng(text)
+    
+    bot.send_message(user_id, respond, reply_markup=config.get_keyboard(lng))
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def query_handler(call):
     bot.answer_callback_query(callback_query_id=call.id)
-    user_id = call.from_user.id
+    user_id = str(call.from_user.id)
     if call.data == 'ua':
-        with open(f'users/{user_id}/lang', 'w') as f:
-            f.write('ua')
-        reg(user_id)
+        sqlite.change_language(user_id, 'ua')
+        hello_message(user_id)
     elif call.data == 'eng':
-        with open(f'users/{user_id}/lang', 'w') as f:
-            f.write('eng')
-        reg(user_id)
+        sqlite.change_language(user_id, 'eng')
+        hello_message(user_id)
     else:
         pass
 

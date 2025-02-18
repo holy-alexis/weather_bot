@@ -1,25 +1,18 @@
 from telebot import types
-api_key = 'type here your token'
-OWM_key = 'type here your token'
+api_key = 'token'
+OWM_key = 'token'
 
 
-def get_keyboard_ua():
-    keyboard_ua = types.ReplyKeyboardMarkup(row_width=3, resize_keyboard=True, one_time_keyboard=True)
-    button_last_request = types.KeyboardButton(text="Погода: зараз")
-    button_5day = types.KeyboardButton(text="Погода: 5 днiв")
-    button_lng = types.KeyboardButton(text="Зміна мови")
-    keyboard_ua.add(button_last_request)
-    keyboard_ua.add(button_5day)
-    keyboard_ua.add(button_lng)
-    return keyboard_ua
+def get_keyboard(lng):
+    last_request = "Погода: зараз" if lng == 'ua' else "Weather: now"
+    five_days = "Погода: 5 днiв" if lng == 'ua' else "Weather: 5 days"
+    change_lng = "Зміна мови" if lng == 'ua' else "Switch language"
+    keyboard = types.ReplyKeyboardMarkup(row_width=3, resize_keyboard=True, one_time_keyboard=True)
+    button_last_request = types.KeyboardButton(text=last_request)
+    button_5day = types.KeyboardButton(text=five_days)
+    button_lng = types.KeyboardButton(text=change_lng)
+    keyboard.add(button_last_request)
+    keyboard.add(button_5day)
+    keyboard.add(button_lng)
+    return keyboard
 
-
-def get_keyboard_en():
-    keyboard_en = types.ReplyKeyboardMarkup(row_width=3, resize_keyboard=True, one_time_keyboard=True)
-    button_last_request = types.KeyboardButton(text="Weather: now")
-    button_5day = types.KeyboardButton(text="Weather: 5 days")
-    button_lng = types.KeyboardButton(text="Switch language")
-    keyboard_en.add(button_last_request)
-    keyboard_en.add(button_5day)
-    keyboard_en.add(button_lng)
-    return keyboard_en
