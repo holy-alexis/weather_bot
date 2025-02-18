@@ -1,22 +1,44 @@
 # Weather Bot
+
 This is a simple Telegram bot that can show the weather for a given city.
 
-Bot uses Telegram API and OpenWeatherMap API
+The bot uses the Telegram API and OpenWeatherMap API.
 
-To use the bot follow the steps below:
+## Installation
 
-Download Python3 and Git CLI<br>
-Open console and input next lines:
+1. Download Python 3 and Git CLI.
+2. Open the console and input the following commands:
 
->git clone https://github.com/holy-alexis/weather_bot<br>
->cd weather_bot<br>
->[WINDOWS] pip install -r requirements.txt<br>
->[LINUX] pip3 install -r requirements.txt<br>
+    ```sh
+    git clone https://github.com/holy-alexis/weather_bot
+    cd weather_bot
+    ```
 
-Open config.py using any IDE<br>
-In variable "api_key" insert token from Telegram Bot API (see https://t.me/BotFather for details)<br>
-In variable "OWN_key" insert token from OpenWeatherMap API (see https://openweathermap.org/api for details)<br>
-Back to console and input next lines:<br>
+3. Install the required dependencies:
 
->[WINDOWS] python weather_bot.py<br>
->[LINUX] python3 weather_bot.py<br>
+    ```sh
+    # For Windows
+    pip install -r requirements.txt
+
+    # For Linux
+    pip3 install -r requirements.txt
+    ```
+
+## Configuration
+
+1. Open `config.py` using any IDE.
+2. Insert your tokens:
+    - In the variable `api_key`, insert the token from the Telegram Bot API (see [BotFather](https://t.me/BotFather) for details).
+    - In the variable `OWN_key`, insert the token from the OpenWeatherMap API (see [OpenWeatherMap](https://openweathermap.org/api) for details).
+
+## Usage
+
+1. Back in the console, input the following commands to run the bot:
+
+    ```sh
+    # For Windows
+    python weather_bot.py
+
+    # For Linux
+    python3 weather_bot.py
+    ```
